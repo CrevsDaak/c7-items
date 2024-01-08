@@ -1,0 +1,19 @@
+BACKUP "weidu_external/backup/c7-items"
+AUTHOR "crevs.daak@gmail.com"
+
+VERSION v0.1
+
+
+README ~c7-items/lang/%LANGUAGE%/readme.txt~ ~c7-items/readme.txt~
+
+
+LANGUAGE
+  English
+  english
+  "c7-items/lang/english/setup.tra"
+
+
+BEGIN @77000
+REQUIRE_PREDICATE GAME_IS ~bgt tob eet bg2ee~ @77001
+
+INCLUDE "c7-items/lib/main.tph"
