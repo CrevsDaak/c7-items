@@ -4,7 +4,7 @@ AUTHOR "crevs.daak@gmail.com"
 VERSION v0.1
 
 
-README ~c7-items/lang/%LANGUAGE%/readme.txt~ ~c7-items/readme.txt~
+README "c7-items/readme.md"
 
 
 LANGUAGE
@@ -13,7 +13,17 @@ LANGUAGE
   "c7-items/lang/english/setup.tra"
 
 
-BEGIN @77000
-REQUIRE_PREDICATE GAME_IS ~bgt tob eet bg2ee~ @77001
+BEGIN @77000 DESIGNATED 100
+REQUIRE_PREDICATE GAME_IS ~bgt tob eet bgee bg2ee~ @77001
 
-INCLUDE "c7-items/lib/main.tph"
+ACTION_IF GAME_IS ~bgee eet bgt~ BEGIN
+  INCLUDE "c7-items/lib/bg1_content.tph"
+END
+
+ACTION_IF GAME_IS ~bg2ee tob~ BEGIN
+  INCLUDE "c7-items/lib/bg2_content.tph"
+END
+
+INCLUDE "c7-items/lib/shared_content.tph"
+
+//eof
