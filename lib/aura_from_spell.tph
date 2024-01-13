@@ -1,0 +1,79 @@
+/* aura_from_spell.tph
+ *
+ * declares the ADD_ITEM_AURA_EFFECT_FROM_SPELL patch function
+ * it basically functions exactly as ADD_ITEM_EQEFFECT except it
+ * creates the necessary spells and effect files to apply the effects
+ * of the spell over an area while the item is equipped.
+ *
+ * Note that resources are created with destructive naming, eg, you can 100% overwrite old spell or effect files.
+ * Cosmetic effects are not copied over.
+ *
+ */
+
+//TODO
+// - finish writing the item eqeffect patch
+// - figure out wether to copy externally all the opcodes or to clone the spell and delete the unwanted ones
+// and implement either of those!
+// - then, figure out if applying via op272 isn't better, since apparently applying .eff files is limited to 1 per creature active at a time
+// if the spell is copied over, all the duration fields will have to be set to the appropriate duration (7s or 6s or maybe just say fuckit and 3s or 4s)
+// - allow for multiple spells to be used as source for the auras
+// - figure out how the aura AoE works and how I could change their size
+
+DEFINE_PATCH_FUNCTION ADD_ITEM_AURA_EFFECT_FROM_SPELL
+	STR_VAR
+		item = EVAL "%DEST_RES%"
+		spell = ""
+BEGIN
+	PATCH_IF "%spell%" STR_CMP "" && FILE_EXISTS_IN_GAME "%spell%.spl" BEGIN
+		INNER_ACTION BEGIN
+			COPY_EXISTING - "%spell%.spl" override
+				GET_OFFSET_ARRAY ab_array SPL_V10_HEADERS
+				PHP_EACH ab_array AS int => ab_off BEGIN
+					GET_OFFSET_ARRAY2 fx_array ab_off SPL_V10_HEAD_EFFECTS
+					PHP_EACH fx_array AS int => fx_off BEGIN
+						
+					END
+				END
+			BUT_ONLY
+			
+			// create an effect that applies a spell. very simple stuff
+			CREATE EFF "%c7__aura_spell_name%"
+				WRITE_LONG 0x10 146 //opcode
+				WRITE_LONG 0x14 1 //target
+				WRITE_LONG 0x20 1 //mode
+				WRITE_SHORT 0x2c 100 //probability1
+				WRITE_ASCIIE 0x30 "%c7__aura_spell_name%"
+
+			// creates a blank spell w/blank ability, then adds in the effects via function calls
+			CREATE SPL "%c7__aura_spell_name%"
+				WRITE_LONG 0x8 "-1" //blank out name
+				WRITE_LONG 0xC "-1"
+				WRITE_SHORT 0x1c 4 //innate
+				WRITE_SHORT 0x68 1 //ab count
+				INSERT_BYTES 0x72 0x28 //add spl ab header
+				WRITE_BYTE 0x72 1 //head type
+				WRITE_SHORT 0x74 2 //ab type
+				WRITE_BYTE 0x7e 1 //target
+				LPF ADD_SPELL_EFFECT
+					INT_VAR
+						opcode
+						target
+						timing
+						parameter1
+				END
+			
+		END
+		
+		LPF ADD_ITEM_EQEFFECT
+			INT_VAR
+				opcode
+			STR_VAR
+				resource = EVAL "%c7__aura_spell_name%"
+		END
+	END ELSE BEGIN
+		PATCH_WARN ~WARNING: Failed to apply ADD_ITEM_AURA_EFFECT_FROM_SPELL to %item%.itm due to missing %spell%.spl!~
+	END
+END
+
+
+	

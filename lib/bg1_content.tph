@@ -1,0 +1,7 @@
+WITH_SCOPE BEGIN
+	LOAD_TRA "c7-items/lang/%LANGUAGE%/bg1_content.tra"
+	
+	ACTION_FOR_EACH spell IN sppr101 sppr108 BEGIN
+
+	END
+END

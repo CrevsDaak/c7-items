@@ -3,6 +3,7 @@ AUTHOR "crevs.daak@gmail.com"
 
 VERSION v0.1
 
+MODDER setup_tra fail area_variables warn missing_extern warn missing_resref fail missing_eval warn fun_args warn
 
 README "c7-items/readme.md"
 

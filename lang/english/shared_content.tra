@@ -1,0 +1,17 @@
+@100400 = ~Long Sword of Acid +1~
+@100401 = ~These swords are usually referred to as double-edged swords, war swords, or military swords. The blade shows signs of highly acidic corrosion, but does not appear to be deteriorating at all due to it, which hints at its magical nature and abilities.
+
+STATISTICS:
+
+Equipped abilities:
+– Acid Resistance: +25%
+
+THAC0: +1
+Damage: 1d8+1 (slashing) +5 (acid)
+Speed Factor: 4
+Proficiency Type: Long Sword
+Type: One-handed
+Requires:
+ 6 Strength
+
+Weight: 4~
