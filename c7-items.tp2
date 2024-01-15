@@ -21,7 +21,7 @@ ACTION_IF GAME_IS ~bgee eet bgt~ BEGIN
   INCLUDE "c7-items/lib/bg1_content.tph"
 END
 
-ACTION_IF GAME_IS ~bg2ee tob~ BEGIN
+ACTION_IF GAME_IS ~bg2ee eet bgt tob~ BEGIN
   INCLUDE "c7-items/lib/bg2_content.tph"
 END
 
