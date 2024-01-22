@@ -1,0 +1,110 @@
+
+// add_rnd_treas.tph
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/add_rnd_treas.tph, 2024-01-22 Monday 00:54:05 nico>
+
+DEFINE_ACTION_FUNCTION PATCH_RANDOM_TREASURE_ROW
+  STR_VAR
+    row_to_add   = ""
+    table_2da    = ""
+    identifier   = ""
+  RET
+    item_name    = ""
+BEGIN
+  ACTION_IF "%row_to_add%" STR_CMP "" BEGIN
+    PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed to patch %table_2da%.2da: row_to_add is empty!~
+  END ELSE ACTION_IF "%table_2da%" STR_CMP "" && FILE_EXISTS_IN_GAME "%table_2da%.2da" BEGIN
+    OUTER_PATCH "%row_to_add%" BEGIN
+      COUNT_2DA_COLS c7__c7__patch_cols
+      READ_2DA_ENTRY 1 1 c7__c7__patch_cols c7__c7__first_col
+      PATCH_IF c7__c7__patch_cols == 20 && "%identifier%" STR_CMP "%c7__c7__first_col%" && "%identifier%" STR_CMP "" BEGIN
+        TEXT_SPRINT c7__c7__patch_info ~%identifier%  %row_to_add%~
+      END ELSE PATCH_IF c7__c7__patch_cols == 21 && ("%identifier%" STR_EQ "%c7__c7__first_col%" || "%identifier%" STR_EQ "") BEGIN
+        TEXT_SPRINT c7__c7__patch_info ~%row_to_add%~
+        TEXT_SPRINT identifier ~%c7__c7__first_col%~
+      END ELSE PATCH_IF c7__c7__patch_cols == 20 && "%identifier%" STR_EQ "%c7__c7__first_col%" BEGIN
+        PATCH_WARN ~WARNING: PATCH_RANDOM_TREASURE_ROW: provided row_to_add contains 20 columns but col 1 is the id %c7__c7__first_col%! Not enough columns, adding a blank entry.~
+        TEXT_SPRINT c7__c7__patch_info ~%row_to_add%   *~
+      END ELSE PATCH_IF c7__c7__patch_cols < 20 BEGIN
+        PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed: provided row_to_add contains less columns than the minimum required (20).~
+      END ELSE PATCH_IF c7__c7__patch_cols > 21 BEGIN
+        PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed: provided row_to_add contains too many columns!~
+      END
+    END
+
+    ACTION_IF !FILE_CONTAINS_EVALUATED "%table_2da%.2da" "%identifier%" && VARIABLE_IS_SET c7__c7__patch_info BEGIN
+      APPEND "%table_2da%.2da" "%c7__c7__patch_info%" UNLESS "%identifier%"
+
+      COPY_EXISTING - "%table_2da%.2da" override
+        COUNT_2DA_COLS c7__c7__rnd_2da_cols
+        READ_2DA_ENTRIES_NOW ~c7__c7__rnd_2da_rows~ c7__c7__rnd_2da_cols
+        READ_2DA_ENTRY_FORMER ~c7__c7__rnd_2da_rows~ "%c7__c7__rnd_2da_rows%" 0 c7__c7__id_entry
+        PATCH_IF "%c7__c7__id_entry%" STR_EQ "%identifier%" BEGIN
+          INNER_PATCH "%table_2da%" BEGIN
+            READ_ASCII 0x0 c7__c7__item_name (6) // this is hardcoded behaviour
+          END
+
+          PATCH_IF c7__c7__rnd_2da_rows < 10 BEGIN
+            TEXT_SPRINT item_name ~%c7__c7__item_name%0%c7__c7__rnd_2da_rows%~
+          END ELSE BEGIN
+            TEXT_SPRINT item_name ~%c7__c7__item_name%%c7__c7__rnd_2da_rows%~
+          END
+        END ELSE BEGIN
+          PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW: failed to procure item_name for row with id %identifier% on %table_2da%.2da!~
+        END
+      BUT_ONLY IF_EXISTS
+    END ELSE ACTION_IF FILE_CONTAINS_EVALUATED "%table_2da%.2da" "%identifier%" BEGIN
+      FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed: %table_2d%.2da already contains id %identifier%!~
+    END
+  END ELSE BEGIN
+    FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed: %table_2da%.2da does not exist.~
+  END
+END
+
+
+/* warning: will always return a symbol if the 2da table does not exist */
+DEFINE_ACTION_FUNCTION GET_UNIQUE_ID_FOR_2DA
+  STR_VAR
+    prefix          = "c7"
+    table           = ""
+  RET
+    new_id
+BEGIN
+  OUTER_PATCH_SAVE new_id ~~ BEGIN
+    unique = 0
+    value = 0
+    WHILE !unique BEGIN
+      ++value
+      LPF BASE36 INT_VAR value = value RET base36 END
+      PATCH_IF !FILE_CONTAINS_EVALUATED "%table%.2da" "%prefix%%base36%" BEGIN
+        unique = 1
+        WRITE_ASCIIE 0x0 "%prefix%%base36%"
+      END
+    END
+  END
+END
+
+
+DEFINE_ACTION_FUNCTION ADD_RANDOM_TREASURE
+  STR_VAR
+    row_info        = ""
+    table           = ""
+  RET
+    rnd_item
+BEGIN
+  ACTION_IF "%table%" STR_CMP "" || "%row_info%" STR_CMP "" BEGIN
+    FAIL ~FATAL ERROR: ADD_RANDOM_TREASURE failed: empty string arguments!~
+  END
+
+  LAF GET_UNIQUE_ID_FOR_2DA STR_VAR table = EVAL "%table%" RET new_id END
+
+  LAF PATCH_RANDOM_TREASURE_ROW
+    STR_VAR
+      row_to_add = EVAL "%row_info%"
+      table_2da  = EVAL "%table%"
+      identifier = EVAL "%new_id%"
+    RET
+      rnd_item   = item_name
+  END
+END
+
+// eof
