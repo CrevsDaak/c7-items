@@ -1,31 +1,31 @@
-WITH_SCOPE BEGIN
-	LOAD_TRA "c7-items/lang/%LANGUAGE%/shared_content.tra"
-	
-	COPY_EXISTING sw1h05.itm "override/c7test.itm"
-		LPF ADD_ITEM_EFFECT
-			INT_VAR
-				opcode = 12
-				target = 2
-				timing = 1
-				parameter1 = 5
-				parameter2 = 65536
-				type = 99
-		END
-		LPF ADD_ITEM_EQEFFECT
-			INT_VAR
-				opcode = 27
-				target = 1
-				timing = 2
-				parameter1 = 25
-		END
-		LPF ADD_ITEM_EQEFFECT
-			INT_VAR
-				opcode = 142
-				parameter2 = 24
-				target = 1
-				timing = 2
-		END
-		SAY NAME2 @100400
-		SAY IDENTIFIED_DESC @100401
-	IF_EXISTS
+ACTION_TIME shared_content BEGIN
+  LOAD_TRA "c7-items/lang/%LANGUAGE%/shared_content.tra"
+  
+  COPY_EXISTING sw1h05.itm "override/c7test.itm"
+    LPF ADD_ITEM_EFFECT
+      INT_VAR
+        opcode = 12
+        target = 2
+        timing = 1
+        parameter1 = 5
+        parameter2 = 65536
+        type = 99
+    END
+    LPF ADD_ITEM_EQEFFECT
+      INT_VAR
+        opcode = 27
+        target = 1
+        timing = 2
+        parameter1 = 25
+    END
+    LPF ADD_ITEM_EQEFFECT
+      INT_VAR
+        opcode = 142
+        parameter2 = 24
+        target = 1
+        timing = 2
+    END
+    SAY NAME2 @100400
+    SAY IDENTIFIED_DESC @100401
+  IF_EXISTS
 END

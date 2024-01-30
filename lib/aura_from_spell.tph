@@ -12,68 +12,97 @@
 
 //TODO
 // - finish writing the item eqeffect patch
-// - figure out wether to copy externally all the opcodes or to clone the spell and delete the unwanted ones
-// and implement either of those!
 // - then, figure out if applying via op272 isn't better, since apparently applying .eff files is limited to 1 per creature active at a time
-// if the spell is copied over, all the duration fields will have to be set to the appropriate duration (7s or 6s or maybe just say fuckit and 3s or 4s)
 // - allow for multiple spells to be used as source for the auras
 // - figure out how the aura AoE works and how I could change their size
 
 DEFINE_PATCH_FUNCTION ADD_ITEM_AURA_EFFECT_FROM_SPELL
-	STR_VAR
-		item = EVAL "%DEST_RES%"
-		spell = ""
+  STR_VAR
+    item = EVAL "%DEST_RES%"
+    spell = ""
 BEGIN
-	PATCH_IF "%spell%" STR_CMP "" && FILE_EXISTS_IN_GAME "%spell%.spl" BEGIN
-		INNER_ACTION BEGIN
-			COPY_EXISTING - "%spell%.spl" override
-				GET_OFFSET_ARRAY ab_array SPL_V10_HEADERS
-				PHP_EACH ab_array AS int => ab_off BEGIN
-					GET_OFFSET_ARRAY2 fx_array ab_off SPL_V10_HEAD_EFFECTS
-					PHP_EACH fx_array AS int => fx_off BEGIN
-						
-					END
-				END
-			BUT_ONLY
-			
-			// create an effect that applies a spell. very simple stuff
-			CREATE EFF "%c7__aura_spell_name%"
-				WRITE_LONG 0x10 146 //opcode
-				WRITE_LONG 0x14 1 //target
-				WRITE_LONG 0x20 1 //mode
-				WRITE_SHORT 0x2c 100 //probability1
-				WRITE_ASCIIE 0x30 "%c7__aura_spell_name%"
+  PATCH_IF "%spell%" STR_CMP "" && FILE_EXISTS_IN_GAME "%spell%.spl" BEGIN
+    INNER_ACTION BEGIN
+      COPY_EXISTING - "%spell%.spl" override
+        GET_OFFSET_ARRAY ab_array SPL_V10_HEADERS
+        PHP_EACH ab_array AS int => ab_off BEGIN
+          GET_OFFSET_ARRAY2 fx_array ab_off SPL_V10_HEAD_EFFECTS
+          index = 0
+          PHP_EACH fx_array AS int => fx_off BEGIN
+            READ_SHORT fx_off fx_op
+            PATCH_MATCH fx_op WITH
+              139 215 174 141 50 9 321 322 336 364
+              BEGIN
+                // do nothing, we don't want to copy these effects
+              END
 
-			// creates a blank spell w/blank ability, then adds in the effects via function calls
-			CREATE SPL "%c7__aura_spell_name%"
-				WRITE_LONG 0x8 "-1" //blank out name
-				WRITE_LONG 0xC "-1"
-				WRITE_SHORT 0x1c 4 //innate
-				WRITE_SHORT 0x68 1 //ab count
-				INSERT_BYTES 0x72 0x28 //add spl ab header
-				WRITE_BYTE 0x72 1 //head type
-				WRITE_SHORT 0x74 2 //ab type
-				WRITE_BYTE 0x7e 1 //target
-				LPF ADD_SPELL_EFFECT
-					INT_VAR
-						opcode
-						target
-						timing
-						parameter1
-				END
-			
-		END
-		
-		LPF ADD_ITEM_EQEFFECT
-			INT_VAR
-				opcode
-			STR_VAR
-				resource = EVAL "%c7__aura_spell_name%"
-		END
-	END ELSE BEGIN
-		PATCH_WARN ~WARNING: Failed to apply ADD_ITEM_AURA_EFFECT_FROM_SPELL to %item%.itm due to missing %spell%.spl!~
-	END
+              DEFAULT
+                SET $fx_to_apply("%index%_opcode")   fx_op
+                SET $fx_to_apply("%index%_param1")   LONG_AT (fx_off + 0x4)
+                SET $fx_to_apply("%index%_param2")   LONG_AT (fx_off + 0x8)
+                SET $fx_to_apply("%index%_dicenum")  LONG_AT (fx_off + 0x1c)
+                SET $fx_to_apply("%index%_dicesize") LONG_AT (fx_off + 0x20)
+                SET $fx_to_apply("%index%_svthrow")  LONG_AT (fx_off + 0x24)
+                SET $fx_to_apply("%index%_svbonus")  LONG_AT (fx_off + 0x28)
+                SET $fx_to_apply("%index%_tobexid")  LONG_AT (fx_off + 0x2c)
+
+                READ_ASCII (fx_off + 0x14) fx_res
+                TEXT_SPRINT $fx_to_apply("%index%_res") "%fx_res%"
+
+                ++index
+            END
+          END
+          SET $fx_to_apply("index") index
+        END
+      BUT_ONLY
+
+      // should get changed to pick new, unused names via unique name function
+      TEXT_SPRINT c7__aura_effect_name   "%item%"
+      TEXT_SPRINT c7__aura_spell_name    "%item%"
+      
+      // create an effect that applies a spell. very simple stuff
+      CREATE EFF "%c7__aura_effect_name%"
+        WRITE_LONG 0x10 146 //opcode
+        WRITE_LONG 0x14 1 //target
+        WRITE_LONG 0x20 1 //mode
+        WRITE_SHORT 0x2c 100 //probability1
+        WRITE_ASCIIE 0x30 "%c7__aura_spell_name%"
+
+      // creates a blank spell w/blank ability, then adds in the effects via function calls
+      CREATE SPL "%c7__aura_spell_name%"
+        WRITE_LONG 0x8 "-1" //blank out name
+        WRITE_LONG 0xC "-1"
+        WRITE_SHORT 0x1c 4 //innate
+        WRITE_SHORT 0x68 1 //ab count
+        INSERT_BYTES 0x72 0x28 //add spl ab header
+        WRITE_BYTE 0x72 1 //head type
+        WRITE_SHORT 0x74 2 //ab type
+        WRITE_BYTE 0x7e 1 //target
+        fx_count = $fx_to_apply("index")
+        FOR (i=0; i < fx_count; i+=1) BEGIN
+          LPF ADD_SPELL_EFFECT
+            INT_VAR
+              opcode        = $fx_to_apply("%index%_opcode")
+              target        = 3 // might have to revise this
+              duration      = 6 // might have to change this as well
+              parameter1    = $fx_to_apply("%index%_param1")
+              parameter2    = $fx_to_apply("%index%_param2")
+              dicenumber    = $fx_to_apply("%index%_dicenum")
+              dicesize      = $fx_to_apply("%index%_dicesize")
+              savingthrow   = $fx_to_apply("%index%_svthrow")
+              savebonus     = $fx_to_apply("%index%_svbonus")
+              special       = $fx_to_apply("%index%_tobexid")
+          END
+        END
+    END
+    
+    LPF ADD_ITEM_EQEFFECT
+      INT_VAR
+        opcode
+      STR_VAR
+        resource = EVAL "%c7__aura_spell_name%"
+    END
+  END ELSE BEGIN
+    PATCH_WARN ~WARNING: Failed to apply ADD_ITEM_AURA_EFFECT_FROM_SPELL to %item%.itm due to missing %spell%.spl!~
+  END
 END
-
-
-	
