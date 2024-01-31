@@ -1,7 +1,12 @@
 ACTION_TIME bg1_content BEGIN
   LOAD_TRA "c7-items/lang/%LANGUAGE%/bg1_content.tra"
+  INCLUDE "c7-items/lib/aura_from_spell.tph"
 
+  OUTER_SET value = 0
   ACTION_FOR_EACH spell IN sppr101 sppr108 BEGIN
-
+    COPY_EXISTING sw1h04.itm "override/c7sw1h0%value%.itm"
+      ++value
+      LPF ADD_ITEM_AURA_EFFECT_FROM_SPELL STR_VAR spell END //= EVAL "%spell%"
+    BUT_ONLY IF_EXISTS
   END
 END

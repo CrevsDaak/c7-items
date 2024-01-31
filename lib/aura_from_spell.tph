@@ -11,10 +11,11 @@
  */
 
 //TODO
-// - finish writing the item eqeffect patch
-// - then, figure out if applying via op272 isn't better, since apparently applying .eff files is limited to 1 per creature active at a time
 // - allow for multiple spells to be used as source for the auras
+//      -> "just reapply the function patch" you end up with multiple op232 per item
 // - figure out how the aura AoE works and how I could change their size
+// - apply a protection to the aura .spl via op321 on the spells used, so it doesn't stack
+// - used ToBEx saving bonus field flag & special field ID
 
 DEFINE_PATCH_FUNCTION ADD_ITEM_AURA_EFFECT_FROM_SPELL
   STR_VAR
@@ -31,35 +32,35 @@ BEGIN
           PHP_EACH fx_array AS int => fx_off BEGIN
             READ_SHORT fx_off fx_op
             PATCH_MATCH fx_op WITH
-              139 215 174 141 50 9 321 322 336 364
+              139 215 174 141 50 9 321 322 336 364 106
               BEGIN
                 // do nothing, we don't want to copy these effects
               END
 
               DEFAULT
-                SET $fx_to_apply("%index%_opcode")   fx_op
-                SET $fx_to_apply("%index%_param1")   LONG_AT (fx_off + 0x4)
-                SET $fx_to_apply("%index%_param2")   LONG_AT (fx_off + 0x8)
-                SET $fx_to_apply("%index%_dicenum")  LONG_AT (fx_off + 0x1c)
-                SET $fx_to_apply("%index%_dicesize") LONG_AT (fx_off + 0x20)
-                SET $fx_to_apply("%index%_svthrow")  LONG_AT (fx_off + 0x24)
-                SET $fx_to_apply("%index%_svbonus")  LONG_AT (fx_off + 0x28)
-                SET $fx_to_apply("%index%_tobexid")  LONG_AT (fx_off + 0x2c)
+                SET $fx_to_apply("%index%_opcode")   = SHORT_AT fx_off
+                SET $fx_to_apply("%index%_param1")   = LONG_AT (fx_off + 0x4)
+                SET $fx_to_apply("%index%_param2")   = LONG_AT (fx_off + 0x8)
+                SET $fx_to_apply("%index%_dicenum")  = LONG_AT (fx_off + 0x1c)
+                SET $fx_to_apply("%index%_dicesize") = LONG_AT (fx_off + 0x20)
+                SET $fx_to_apply("%index%_svthrow")  = LONG_AT (fx_off + 0x24)
+                SET $fx_to_apply("%index%_svbonus")  = LONG_AT (fx_off + 0x28)
+                SET $fx_to_apply("%index%_tobexid")  = LONG_AT (fx_off + 0x2c)
 
                 READ_ASCII (fx_off + 0x14) fx_res
-                TEXT_SPRINT $fx_to_apply("%index%_res") "%fx_res%"
+                TEXT_SPRINT $fx_to_apply("%index%_res") EVAL "%fx_res%"
 
                 ++index
             END
           END
-          SET $fx_to_apply("index") index
+          SET $fx_to_apply("idx") = index
         END
       BUT_ONLY
 
       // should get changed to pick new, unused names via unique name function
-      TEXT_SPRINT c7__aura_effect_name   "%item%"
-      TEXT_SPRINT c7__aura_spell_name    "%item%"
-      
+//      TEXT_SPRINT c7__aura_effect_name   "%item%"
+      OUTER_SPRINT c7__aura_spell_name    "%item%"
+/*
       // create an effect that applies a spell. very simple stuff
       CREATE EFF "%c7__aura_effect_name%"
         WRITE_LONG 0x10 146 //opcode
@@ -67,7 +68,7 @@ BEGIN
         WRITE_LONG 0x20 1 //mode
         WRITE_SHORT 0x2c 100 //probability1
         WRITE_ASCIIE 0x30 "%c7__aura_spell_name%"
-
+*/
       // creates a blank spell w/blank ability, then adds in the effects via function calls
       CREATE SPL "%c7__aura_spell_name%"
         WRITE_LONG 0x8 "-1" //blank out name
@@ -78,27 +79,31 @@ BEGIN
         WRITE_BYTE 0x72 1 //head type
         WRITE_SHORT 0x74 2 //ab type
         WRITE_BYTE 0x7e 1 //target
-        fx_count = $fx_to_apply("index")
-        FOR (i=0; i < fx_count; i+=1) BEGIN
+        WRITE_SHORT (0x72 + 0x26) 158 //projectile, INAREANP.pro
+        fx_count = fx_to_apply_idx
+        FOR (i=0; i < fx_count; ++i) BEGIN
           LPF ADD_SPELL_EFFECT
             INT_VAR
-              opcode        = $fx_to_apply("%index%_opcode")
-              target        = 3 // might have to revise this
-              duration      = 6 // might have to change this as well
-              parameter1    = $fx_to_apply("%index%_param1")
-              parameter2    = $fx_to_apply("%index%_param2")
-              dicenumber    = $fx_to_apply("%index%_dicenum")
-              dicesize      = $fx_to_apply("%index%_dicesize")
-              savingthrow   = $fx_to_apply("%index%_svthrow")
-              savebonus     = $fx_to_apply("%index%_svbonus")
-              special       = $fx_to_apply("%index%_tobexid")
+              opcode        = $fx_to_apply("%i%_opcode")
+              target        = 3
+              duration      = 6 // might have to change this to 7, otherwise the effect will be off during 1 tick
+              parameter1    = $fx_to_apply("%i%_param1")
+              parameter2    = $fx_to_apply("%i%_param2")
+              dicenumber    = $fx_to_apply("%i%_dicenum")
+              dicesize      = $fx_to_apply("%i%_dicesize")
+              savingthrow   = $fx_to_apply("%i%_svthrow")
+              savebonus     = $fx_to_apply("%i%_svbonus")
+              special       = $fx_to_apply("%i%_tobexid") // add it in if not present
           END
         END
     END
     
     LPF ADD_ITEM_EQEFFECT
       INT_VAR
-        opcode
+        opcode          = 232
+        target          = 1
+        parameter2      = 9
+        timing          = 2
       STR_VAR
         resource = EVAL "%c7__aura_spell_name%"
     END
