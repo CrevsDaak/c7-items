@@ -4,7 +4,7 @@
  * it basically functions exactly as ADD_ITEM_EQEFFECT except it
  * creates the necessary spells and effect files to apply the effects
  * of the spell over an area while the item is equipped.
-
+ *
  * The 'tobex_id_sign' should be your modding signature's ascii character values in hex.
  *
  * Note that resources are created with destructive naming, eg, you can 100% overwrite old spell or effect files.
@@ -16,6 +16,8 @@
 // - allow for multiple spells to be used as source for the auras
 //      -> "just reapply the function patch" you end up with multiple op232 per item
 // - figure out how the aura AoE works and how I could change their size
+// - read projectile index off proj ids file
+// - sort out different files having similar tobexid on each opcode,
 
 DEFINE_PATCH_FUNCTION ADD_ITEM_AURA_EFFECT_FROM_SPELL
   INT_VAR
@@ -34,17 +36,21 @@ BEGIN
           PHP_EACH fx_array AS int => fx_off BEGIN
             READ_SHORT fx_off fx_op
             PATCH_MATCH fx_op WITH
-              139 215 174 141 50 9 321 322 336 364 106 23
+              139 215 174 141 50 9 321 322 336 364
               BEGIN
                 // do nothing, we don't want to copy these effects
               END
 
               DEFAULT
-                SET $fx_to_apply("%index%_opcode")   = SHORT_AT fx_off
-                SET $fx_to_apply("%index%_param1")   = LONG_AT (fx_off + 0x4)
-                SET $fx_to_apply("%index%_param2")   = LONG_AT (fx_off + 0x8)
-                SET $fx_to_apply("%index%_dicenum")  = LONG_AT (fx_off + 0x1c)
-                SET $fx_to_apply("%index%_dicesize") = LONG_AT (fx_off + 0x20)
+                SET $fx_to_apply("%index%_opcode")     = SHORT_AT fx_off
+                SET $fx_to_apply("%index%_param1")     = LONG_AT (fx_off + 0x4)
+                PATCH_IF fx_op == 106 BEGIN
+                  SET $fx_to_apply("%index%_param2")   = 0 // fixes a potential bug with Remove Fear
+                END ELSE BEGIN
+                  SET $fx_to_apply("%index%_param2")   = LONG_AT (fx_off + 0x8)
+                END
+                SET $fx_to_apply("%index%_dicenum")    = LONG_AT (fx_off + 0x1c)
+                SET $fx_to_apply("%index%_dicesize")   = LONG_AT (fx_off + 0x20)
                 PATCH_IF ENGINE_IS tob BEGIN
                   SET $fx_to_apply("%index%_svthrow")  = LONG_AT (fx_off + 0x24) BOR BIT25
                   SET $fx_to_apply("%index%_tobexid")  = tobex_id_sign << 2 + index
@@ -52,7 +58,7 @@ BEGIN
                   SET $fx_to_apply("%index%_svthrow")  = LONG_AT (fx_off + 0x24)
                   SET $fx_to_apply("%index%_tobexid")  = LONG_AT (fx_off + 0x2c)
                 END
-                SET $fx_to_apply("%index%_svbonus")  = LONG_AT (fx_off + 0x28)
+                SET $fx_to_apply("%index%_svbonus")    = LONG_AT (fx_off + 0x28)
 
                 READ_ASCII (fx_off + 0x14) fx_res
                 TEXT_SPRINT $fx_to_apply("%index%_res") EVAL "%fx_res%"
@@ -109,7 +115,7 @@ BEGIN
           LPF ADD_SPELL_EFFECT
             INT_VAR
               opcode        = 321
-              target        = 3
+              target        = 1
               param2        = 2
             STR_VAR
               resource      = EVAL "%c7__aura_spell_name%"
