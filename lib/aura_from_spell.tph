@@ -12,19 +12,21 @@
  *
  */
 
+OUTER_SET tobex_id_value = 0
+
 //TODO
 // - allow for multiple spells to be used as source for the auras
 //      -> "just reapply the function patch" you end up with multiple op232 per item
 // - figure out how the aura AoE works and how I could change their size
 // - read projectile index off proj ids file
-// - sort out different files having similar tobexid on each opcode,
+// - maybe read tobex_id_value from a .txt file on weidu_external or override.
 
 DEFINE_PATCH_FUNCTION ADD_ITEM_AURA_EFFECT_FROM_SPELL
   INT_VAR
-    tobex_id_sign = 0x3763 //37 63 is '7' 'c'
+    tobex_id_sign       = 0x3763 //37 63 is '7' 'c' and 0x3743 is 7C
   STR_VAR
-    item = EVAL "%DEST_RES%"
-    spell = ""
+    aura_spell          = EVAL "%DEST_RES%"
+    spell               = ""
 BEGIN
   PATCH_IF "%spell%" STR_CMP "" && FILE_EXISTS_IN_GAME "%spell%.spl" BEGIN
     INNER_ACTION BEGIN
@@ -53,7 +55,7 @@ BEGIN
                 SET $fx_to_apply("%index%_dicesize")   = LONG_AT (fx_off + 0x20)
                 PATCH_IF ENGINE_IS tob BEGIN
                   SET $fx_to_apply("%index%_svthrow")  = LONG_AT (fx_off + 0x24) BOR BIT25
-                  SET $fx_to_apply("%index%_tobexid")  = tobex_id_sign << 2 + index
+                  SET $fx_to_apply("%index%_tobexid")  = tobex_id_sign << 2 + tobex_id_value
                 END ELSE BEGIN
                   SET $fx_to_apply("%index%_svthrow")  = LONG_AT (fx_off + 0x24)
                   SET $fx_to_apply("%index%_tobexid")  = LONG_AT (fx_off + 0x2c)
@@ -64,26 +66,15 @@ BEGIN
                 TEXT_SPRINT $fx_to_apply("%index%_res") EVAL "%fx_res%"
 
                 ++index
+                ++tobex_id_value
             END
           END
           SET $fx_to_apply("idx") = index
         END
       BUT_ONLY
 
-      // should get changed to pick new, unused names via unique name function
-//      TEXT_SPRINT c7__aura_effect_name   "%item%"
-      OUTER_SPRINT c7__aura_spell_name    "%item%"
-/*
-      // create an effect that applies a spell. very simple stuff
-      CREATE EFF "%c7__aura_effect_name%"
-        WRITE_LONG 0x10 146 //opcode
-        WRITE_LONG 0x14 1 //target
-        WRITE_LONG 0x20 1 //mode
-        WRITE_SHORT 0x2c 100 //probability1
-        WRITE_ASCIIE 0x30 "%c7__aura_spell_name%"
-*/
       // creates a blank spell w/blank ability, then adds in the effects via function calls
-      CREATE SPL "%c7__aura_spell_name%"
+      CREATE SPL "%aura_spell%"
         WRITE_LONG 0x8 "-1" //blank out name
         WRITE_LONG 0xC "-1"
         WRITE_SHORT 0x1c 4 //innate
@@ -118,7 +109,7 @@ BEGIN
               target        = 1
               param2        = 2
             STR_VAR
-              resource      = EVAL "%c7__aura_spell_name%"
+              resource      = EVAL "%aura_spell%"
           END
         END
     END
@@ -130,7 +121,7 @@ BEGIN
         parameter2      = 9
         timing          = 2
       STR_VAR
-        resource = EVAL "%c7__aura_spell_name%"
+        resource = EVAL "%aura_spell%"
     END
   END ELSE BEGIN
     PATCH_WARN ~WARNING: Failed to apply ADD_ITEM_AURA_EFFECT_FROM_SPELL to %item%.itm due to missing %spell%.spl!~

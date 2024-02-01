@@ -17,6 +17,8 @@ LANGUAGE
 BEGIN @77000 DESIGNATED 100
 REQUIRE_PREDICATE GAME_IS ~bgt tob eet bgee bg2ee~ @77001
 
+INCLUDE "c7-items/lib/aura_from_spell.tph"
+
 ACTION_IF GAME_IS ~bgee eet bgt~ BEGIN
   INCLUDE "c7-items/lib/bg1_content.tph"
 END
