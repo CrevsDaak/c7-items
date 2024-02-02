@@ -19,11 +19,11 @@ REQUIRE_PREDICATE GAME_IS ~bgt tob eet bgee bg2ee~ @77001
 
 INCLUDE "c7-items/lib/aura_from_spell.tph"
 
-ACTION_IF GAME_IS ~bgee eet bgt~ BEGIN
+ACTION_IF GAME_INCLUDES bg1 BEGIN
   INCLUDE "c7-items/lib/bg1_content.tph"
 END
 
-ACTION_IF GAME_IS ~bg2ee eet bgt tob~ BEGIN
+ACTION_IF GAME_INCLUDES bg2 BEGIN
   INCLUDE "c7-items/lib/bg2_content.tph"
 END
 

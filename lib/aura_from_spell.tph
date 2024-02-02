@@ -79,11 +79,13 @@ BEGIN
         WRITE_LONG 0xC "-1"
         WRITE_SHORT 0x1c 4 //innate
         WRITE_SHORT 0x68 1 //ab count
+        WRITE_LONG 0x6a (0x72 + 0x28) //fx off
         INSERT_BYTES 0x72 0x28 //add spl ab header
         WRITE_BYTE 0x72 1 //head type
         WRITE_SHORT 0x74 2 //ab type
         WRITE_BYTE 0x7e 1 //target
-        WRITE_SHORT (0x72 + 0x26) 158 //projectile, INAREANP.pro
+        LOOKUP_IDS_SYMBOL_OF_INT spl_proj ~projectl~ 158 //projectile, INAREAPA.pro, below line fixes an off by one error on BGT
+        WRITE_SHORT (0x72 + 0x26) ("%spl_proj%" STR_EQ ~INAREAPA~ && IDS_OF_SYMBOL ("projectl" "INAREAPA") = 158) ? (IDS_OF_SYMBOL ("projectl" "INAREAPA")) : (IDS_OF_SYMBOL ("projectl" "INAREAPA") + 1) 
         fx_count = fx_to_apply_idx
         FOR (i=0; i < fx_count; ++i) BEGIN
           LPF ADD_SPELL_EFFECT
