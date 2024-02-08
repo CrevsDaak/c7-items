@@ -1,7 +1,12 @@
+
+// shared_content.tpa
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/shared_content.tpa, 2024-02-08 Thursday 12:52:03 nico>
+
+
 ACTION_TIME shared_content BEGIN
-  LOAD_TRA "c7-items/lang/%LANGUAGE%/shared_content.tra"
+  LOAD_TRA "%MOD_FOLDER%/lang/%LANGUAGE%/shared_content%ee_tra%.tra"
   
-  COPY_EXISTING sw1h05.itm "override/c7test.itm"
+  COPY_EXISTING sw1h04.itm "override/c7test.itm"
     LPF ADD_ITEM_EFFECT
       INT_VAR
         opcode = 12
@@ -25,7 +30,8 @@ ACTION_TIME shared_content BEGIN
         target = 1
         timing = 2
     END
-    SAY NAME2 @100400
-    SAY IDENTIFIED_DESC @100401
+    LPF c7_enchant_weapon END
+    SAY NAME2 @300402
+    SAY IDENTIFIED_DESC @300403
   IF_EXISTS
 END

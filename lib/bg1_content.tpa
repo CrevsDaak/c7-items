@@ -1,11 +1,17 @@
+
+// bg1_content.tpa
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/bg1_content.tpa, 2024-02-08 Thursday 12:51:55 nico>
+
+
 ACTION_TIME bg1_content BEGIN
-  LOAD_TRA "c7-items/lang/%LANGUAGE%/bg1_content.tra"
+  LOAD_TRA "%MOD_FOLDER%/lang/%LANGUAGE%/bg1_content%ee_tra%.tra"
 
   OUTER_SET value = 0
   ACTION_FOR_EACH spell IN sppr101 sppr108 BEGIN
     COPY_EXISTING sw1h04.itm "override/c7sw1h0%value%.itm"
       ++value
       LPF ADD_ITEM_AURA_EFFECT_FROM_SPELL STR_VAR spell END
+      LPF c7_enchant_weapon INT_VAR update_name = 1 END
     BUT_ONLY IF_EXISTS
   END
 END

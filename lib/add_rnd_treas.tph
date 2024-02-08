@@ -1,6 +1,6 @@
 
 // add_rnd_treas.tph
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/add_rnd_treas.tph, 2024-01-22 Monday 00:54:05 nico>
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/add_rnd_treas.tph, 2024-02-08 Thursday 11:55:22 nico>
 
 DEFINE_ACTION_FUNCTION PATCH_RANDOM_TREASURE_ROW
   STR_VAR
@@ -8,10 +8,10 @@ DEFINE_ACTION_FUNCTION PATCH_RANDOM_TREASURE_ROW
     table_2da    = ""
     identifier   = ""
   RET
-    item_name    = ""
+    item_name
 BEGIN
   ACTION_IF "%row_to_add%" STR_CMP "" BEGIN
-    PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed to patch %table_2da%.2da: row_to_add is empty!~
+    FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed to patch %table_2da%.2da: row_to_add is empty!~
   END ELSE ACTION_IF "%table_2da%" STR_CMP "" && FILE_EXISTS_IN_GAME "%table_2da%.2da" BEGIN
     OUTER_PATCH "%row_to_add%" BEGIN
       COUNT_2DA_COLS c7__c7__patch_cols
@@ -31,7 +31,7 @@ BEGIN
       END
     END
 
-    ACTION_IF !FILE_CONTAINS_EVALUATED "%table_2da%.2da" "%identifier%" && VARIABLE_IS_SET c7__c7__patch_info BEGIN
+    ACTION_IF !FILE_CONTAINS_EVALUATED ("%table_2da%.2da" "%identifier%") && VARIABLE_IS_SET c7__c7__patch_info BEGIN
       APPEND "%table_2da%.2da" "%c7__c7__patch_info%" UNLESS "%identifier%"
 
       COPY_EXISTING - "%table_2da%.2da" override
@@ -52,7 +52,7 @@ BEGIN
           PATCH_FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW: failed to procure item_name for row with id %identifier% on %table_2da%.2da!~
         END
       BUT_ONLY IF_EXISTS
-    END ELSE ACTION_IF FILE_CONTAINS_EVALUATED "%table_2da%.2da" "%identifier%" BEGIN
+    END ELSE ACTION_IF FILE_CONTAINS_EVALUATED ("%table_2da%.2da" "%identifier%") BEGIN
       FAIL ~FATAL ERROR: PATCH_RANDOM_TREASURE_ROW failed: %table_2d%.2da already contains id %identifier%!~
     END
   END ELSE BEGIN
@@ -75,7 +75,7 @@ BEGIN
     WHILE !unique BEGIN
       ++value
       LPF BASE36 INT_VAR value = value RET base36 END
-      PATCH_IF !FILE_CONTAINS_EVALUATED "%table%.2da" "%prefix%%base36%" BEGIN
+      PATCH_IF !FILE_CONTAINS_EVALUATED ("%table%.2da" "%prefix%%base36%") BEGIN
         unique = 1
         WRITE_ASCIIE 0x0 "%prefix%%base36%"
       END

@@ -1,0 +1,46 @@
+
+// enchant_weapon.tph
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/enchant_weapon.tph, 2024-02-08 Thursday 13:14:09 nico>
+
+
+DEFINE_PATCH_FUNCTION c7_enchant_weapon
+  INT_VAR
+    enchantment = 1
+    thac0_bonus = enchantment
+    damage_bonus = enchantment
+    hit_level = enchantment
+    update_name = 0
+  STR_VAR
+    item_name = ""
+BEGIN
+  PATCH_IF update_name BEGIN
+    PATCH_IF "%item_name%" STR_EQ "" BEGIN
+      READ_STRREF 0xC item_name
+    END
+    INNER_PATCH_SAVE updated_item_name "%item_name%" BEGIN
+     PATCH_IF "%item_name%" STRING_CONTAINS_REGEXP "\+[1-9]$" BEGIN
+        REPLACE_TEXTUALLY ~^\(.+\)$~ ~\1 +%enchantment%~
+      END ELSE BEGIN
+        REPLACE_TEXTUALLY ~\+[1-9]$~ ~+%enchantment%~
+      END
+    END
+    SAY 0xC "%updated_item_name%"
+  END
+
+  READ_LONG 0x18 item_flags
+  WRITE_LONG 0x18 (item_flags BOR BIT6)
+
+  READ_LONG 0x60 old_enchant_lvl
+  WRITE_LONG 0x60 hit_level
+  GET_OFFSET_ARRAY ab_array ITM_V10_HEADERS
+  PHP_EACH ab_array AS int => ab_off BEGIN
+    PATCH_IF BYTE_AT ab_off != 3 BEGIN
+      READ_BYTE (ab_off + 0x12) speed_factor
+      WRITE_BYTE (ab_off + 0x12) (speed_factor + old_enchant_lvl - enchantment)
+    END
+  END
+  // could be more efficient and not call this for every possible header type, but meehh
+  PATCH_FOR_EACH header_type IN 1 2 4 BEGIN
+    LPF ALTER_ITEM_HEADER INT_VAR header_type damage_bonus thac0_bonus END
+  END
+END

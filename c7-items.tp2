@@ -5,28 +5,37 @@ VERSION v0.1
 
 MODDER setup_tra fail area_variables warn missing_extern warn missing_resref fail missing_eval warn fun_args warn
 
-//README "c7-items/readme.md"
+ALWAYS
+  ACTION_BASH_FOR "%MOD_FOLDER%/lib/" "^.+\.tph$" BEGIN
+    INCLUDE "%BASH_FOR_FILESPEC%"
+  END
 
+  ACTION_IF ENGINE_IS tob BEGIN
+    OUTER_SPRINT ee_tra ""
+  END ELSE BEGIN
+    OUTER_SPRINT ee_tra "_ee"
+  END
+END
+
+//README "%MOD_FOLDER%/readme.md"
 
 LANGUAGE
   English
   english
-  "c7-items/lang/english/setup.tra"
+  "%MOD_FOLDER%/lang/english/setup.tra"
 
 
 BEGIN @77000 DESIGNATED 100
 REQUIRE_PREDICATE GAME_IS ~bgt tob eet bgee bg2ee~ @77001
 
-INCLUDE "c7-items/lib/aura_from_spell.tph"
-
 ACTION_IF GAME_INCLUDES bg1 BEGIN
-  INCLUDE "c7-items/lib/bg1_content.tph"
+  INCLUDE "%MOD_FOLDER%/lib/bg1_content.tpa"
 END
 
 ACTION_IF GAME_INCLUDES bg2 BEGIN
-  INCLUDE "c7-items/lib/bg2_content.tph"
+  INCLUDE "%MOD_FOLDER%/lib/bg2_content.tpa"
 END
 
-INCLUDE "c7-items/lib/shared_content.tph"
+INCLUDE "%MOD_FOLDER%/lib/shared_content.tpa"
 
 //eof
