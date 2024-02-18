@@ -1,7 +1,25 @@
 
 // enchant_weapon.tph
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/enchant_weapon.tph, 2024-02-08 Thursday 13:14:09 nico>
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/enchant_weapon.tph, 2024-02-18 Sunday 03:47:19 nico>
 
+DEFINE_PATCH_FUNCTION c7_enchant_update_name
+  INT_VAR
+    enchantment = 1
+  STR_VAR
+    item_name = ""
+BEGIN
+  PATCH_IF "%item_name%" STR_EQ "" BEGIN
+    READ_STRREF 0xC item_name
+  END
+  INNER_PATCH_SAVE updated_item_name "%item_name%" BEGIN
+    PATCH_IF "%item_name%" STRING_CONTAINS_REGEXP "\+[1-9]$" BEGIN
+      REPLACE_TEXTUALLY ~^\(.+\)$~ ~\1 +%enchantment%~
+    END ELSE BEGIN
+      REPLACE_TEXTUALLY ~\+[1-9]$~ ~+%enchantment%~
+    END
+  END
+  SAY 0xC "%updated_item_name%"
+END
 
 DEFINE_PATCH_FUNCTION c7_enchant_weapon
   INT_VAR
@@ -14,17 +32,7 @@ DEFINE_PATCH_FUNCTION c7_enchant_weapon
     item_name = ""
 BEGIN
   PATCH_IF update_name BEGIN
-    PATCH_IF "%item_name%" STR_EQ "" BEGIN
-      READ_STRREF 0xC item_name
-    END
-    INNER_PATCH_SAVE updated_item_name "%item_name%" BEGIN
-     PATCH_IF "%item_name%" STRING_CONTAINS_REGEXP "\+[1-9]$" BEGIN
-        REPLACE_TEXTUALLY ~^\(.+\)$~ ~\1 +%enchantment%~
-      END ELSE BEGIN
-        REPLACE_TEXTUALLY ~\+[1-9]$~ ~+%enchantment%~
-      END
-    END
-    SAY 0xC "%updated_item_name%"
+    LPF c7_enchant_update_name INT_VAR enchantment STR_VAR item_name END
   END
 
   READ_LONG 0x18 item_flags
@@ -35,12 +43,79 @@ BEGIN
   GET_OFFSET_ARRAY ab_array ITM_V10_HEADERS
   PHP_EACH ab_array AS int => ab_off BEGIN
     PATCH_IF BYTE_AT ab_off != 3 BEGIN
-      READ_BYTE (ab_off + 0x12) speed_factor
-      WRITE_BYTE (ab_off + 0x12) (speed_factor + old_enchant_lvl - enchantment)
+      READ_BYTE (ab_off + 0x12) speed_factor //avoid writing negatives
+      WRITE_BYTE (ab_off + 0x12) (speed_factor + old_enchant_lvl - enchantment) >= 0 ? (speed_factor + old_enchant_lvl - enchantment) : 0
+
+      READ_BYTE (ab_off + 0x26) flags
+      PATCH_IF flags BAND BIT1 == BIT1 BEGIN
+        WRITE_BYTE (ab_off + 0x26) (flags BXOR BIT1)
+      END
+    END
+  END
+  LPF ALTER_EFFECT
+    INT_VAR
+      check_headers    = 0
+      match_opcode     = 233
+      match_parameter2 = 109
+      match_timing     = 2
+      parameter1 = enchantment
+  END
+  // while i could also drop in match_probability1 = 1, I think there's no point
+  PATCH_IF !ENGINE_IS tob BEGIN
+    LPF DELETE_EFFECT
+      INT_VAR
+        check_globals = 0
+        match_opcode  = 146
+        header_type   = 1
+      STR_VAR
+        match_resource = EVAL "%SOURCE_RES%"
+    END
+  END ELSE PATCH_IF GAME_IS bgt BEGIN
+    LPF DELETE_EFFECT
+      INT_VAR
+        check_globals = 0
+        header_type   = 1
+        match_opcode  = 309
+      STR_VAR
+        match_resource = EVAL "%SOURCE_RES%"
     END
   END
   // could be more efficient and not call this for every possible header type, but meehh
   PATCH_FOR_EACH header_type IN 1 2 4 BEGIN
     LPF ALTER_ITEM_HEADER INT_VAR header_type damage_bonus thac0_bonus END
+  END
+END
+
+DEFINE_PATCH_FUNCTION c7_enchant_armour
+  INT_VAR
+    enchantment = 1
+    ac_bonus    = enchantment
+    itemexcl_a  = 1
+    update_name = 0
+  STR_VAR
+    item_name = ""
+BEGIN
+  PATCH_IF enchantment && FILE_EXISTS_IN_GAME "itemexcl.2da" && itemexcl_a && SHORT_AT 0x1c == 2 BEGIN
+    INNER_ACTION BEGIN
+      APPEND ~%DEST_RES%  1~ UNLESS ~%DEST_RES%~
+    END
+  END
+
+  PATCH_IF update_name BEGIN
+    LPF c7_enchant_update_name INT_VAR enchantment STR_VAR item_name END
+  END
+
+  READ_LONG 0x18 item_flags
+  WRITE_LONG 0x18 (item_flags BOR BIT6)
+
+  READ_LONG 0x60 old_enchant_lvl
+  WRITE_LONG 0x60 enchantment
+
+  GET_OFFSET_ARRAY ITM_V10_GEN_EFFECTS
+  PHP_EACH fx_array AS int => fx_off BEGIN
+    PATCH_IF (SHORT_AT fx_off) == 0 && LONG_AT (fx_off + 0x8) == BIT4 && BYTE_AT (fx_off + 0xC) BEGIN
+      READ_LONG  (fx_off + 0x4) ac
+      WRITE_LONG (fx_off + 0x4) (ac - enchantment + old_enchant_lvl)
+    END
   END
 END
