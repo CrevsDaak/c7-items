@@ -1,7 +1,7 @@
 BACKUP "weidu_external/backup/c7-items"
 AUTHOR "crevs.daak@gmail.com"
 
-VERSION v0.1
+VERSION "v0.1"
 
 MODDER setup_tra fail area_variables warn missing_extern warn missing_resref fail missing_eval warn fun_args warn
 
@@ -19,10 +19,11 @@ END
 
 //README "%MOD_FOLDER%/readme.md"
 
+// Don't use %MOD_FOLDER% for LANGUAGE until it will be fixed, https://forums.pocketplane.net/index.php?topic=29956.msg340386#msg340386
 LANGUAGE
   English
   english
-  "%MOD_FOLDER%/lang/english/setup.tra"
+  "c7-items/lang/english/setup.tra"
 
 
 BEGIN @77000 DESIGNATED 100
