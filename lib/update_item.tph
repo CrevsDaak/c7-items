@@ -1,0 +1,315 @@
+
+// update_item.tph
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/update_item.tph, 2024-03-09 Saturday 18:56:33 nico>
+
+DEFINE_PATCH_FUNCTION c7_update_item
+  INT_VAR
+    copy_bams  = 1
+
+    weight = "-1"
+    price  = "-1"
+    lore   = "-1"
+
+    min_lvl = "-1"
+    min_str = "-1"
+    min_bon = "-1"
+    min_dex = "-1"
+    min_con = "-1"
+    min_int = "-1"
+    min_wis = "-1"
+    min_cha = "-1"
+
+    enchant_item = 0
+
+    enchantment = 1
+    thac0_bonus = enchantment
+    damage_bonus = enchantment
+    hit_level = enchantment
+    ac_bonus    = enchantment
+    itemexcl_a  = 1
+    update_name = 0
+
+    magical = "-1"
+    silver  = "-1"
+    cold_i  = "-1"
+    cursed  = "-1"
+    twohand = "-1"
+    procrit = "-1"
+    stackmx = "-1"
+  STR_VAR
+    item_type = ""
+    item_name = ""
+    eq_appear = ""
+    prefix = "7c"
+    gicon = ""
+    iicon = "%DEST_RES%"
+    dicon = "crevs_magic_string"
+BEGIN
+  PATCH_IF "%dicon%" STR_EQ "crevs_magic_string" BEGIN
+    INNER_PATCH_SAVE desc_icon "%DEST_RES%" BEGIN
+      WRITE_ASCIIE 0x0 "%prefix%" (2)
+    END
+  END ELSE BEGIN
+    TEXT_SPRINT desc_icon "%dicon%"
+  END
+
+  PATCH_IF "%item_type%" STR_EQ "" BEGIN
+    PATCH_MATCH (SHORT_AT 0x1c) WITH
+      DEFAULT
+        TEXT_SPRINT item_type 
+    END
+  END
+
+  SET books = 0x00
+  SET amulets = 0x01
+  SET armor = 0x02
+  SET belts = 0x03
+  SET boots = 0x04
+  SET arrows = 0x05
+  SET gauntlets = 0x06
+  SET headgear = 0x07
+  SET keys = 0x08
+  SET potions = 0x09
+  SET rings = 0x0a
+  SET scrolls = 0x0b
+  SET shields_not_iwd = 0x0c
+  SET food = 0x0d
+  SET bullets = 0x0e
+  SET bows = 0x0f
+  SET daggers = 0x10
+  SET maces_clubs = 0x11
+  SET slings = 0x12
+  SET small_swords = 0x13
+  SET large_swords = 0x14
+  SET hammers = 0x15
+  SET morning_stars = 0x16
+  SET flails = 0x17
+  SET darts = 0x18
+  SET axes = 0x19
+  SET quarterstaff = 0x1a
+  SET crossbow = 0x1b
+  SET hand_to_hand_weapons = 0x1c
+  SET spears = 0x1d
+  SET halberds = 0x1e
+  SET crossbow_bolts = 0x1f
+  SET cloaks_and_robes = 0x20
+  SET gold_pieces = 0x21
+  SET gems = 0x22
+  SET wands = 0x23
+  SET containers_eye_broken_armor = 0x24
+  SET books_broken_shields_bracelets = 0x25
+  SET familiars_broken_swords_earrings = 0x26
+  SET tattoos_pst = 0x27
+  SET lenses_pst = 0x28
+  SET bucklers = 0x29
+  SET candles = 0x2a
+  SET clubs_iwd = 0x2c
+  SET large_shields_iwd = 0x2f
+  SET medium_shields_iwd = 0x31
+  SET notes = 0x32
+  SET small_shields_iwd = 0x35
+  SET telescopes_iwd = 0x37
+  SET drinks_iwd = 0x38
+  SET great_swords_iwd = 0x39
+  SET container = 0x3a
+  SET fur_pelt = 0x3b
+  SET leather_armor = 0x3c
+  SET studded_leather_armor = 0x3d
+  SET chain_mail = 0x3e
+  SET splint_mail = 0x3f
+  SET half_plate = 0x40
+  SET full_plate = 0x41
+  SET hide_armor = 0x42
+  SET robe = 0x43
+  SET bastard_sword = 0x45
+  SET scarf = 0x46
+  SET food_iwd2 = 0x47
+  SET hat = 0x48
+  SET gauntlet = 0x49
+
+  PATCH_IF enchant_item BEGIN
+    PATCH_IF is_armour BEGIN
+      LPF c7_enchant_armour
+        INT_VAR
+          enchantment
+          ac_bonus
+          itemexcl_a
+          update_name
+      END
+    END ELSE PATCH_IF is_weapon BEGIN
+      LPF c7_enchant_weapon
+        INT_VAR
+          enchantment
+          thac0_bonus
+          damage_bonus
+          hit_level
+          update_name
+      END
+    END
+  END
+
+  PATCH_IF copy_bams BEGIN
+    INNER_ACTION BEGIN
+      ACTION_IF 
+      COPY "%MOD_FOLDER%/bam/%iicon%.bam" override IF_EXISTS
+      COPY "%MOD_FOLDER%/bam/%desc_icon%.bam" override IF_EXISTS
+
+      ACTION_IF "%gicon%" STR_CMP "" BEGIN
+        COPY "%MOD_FOLDER%/bam/%gicon%.bam" override IF_EXISTS
+      END
+    END
+  END
+
+  PATCH_IF NOT (min_lvl < 0) BEGIN
+    WRITE_SHORT 0x24 min_lvl
+  END
+  PATCH_IF NOT (min_str < 0) BEGIN
+    WRITE_SHORT 0x26 min_str
+  END
+  PATCH_IF NOT (min_bon < 0) BEGIN
+    WRITE_BYTE 0x28 min_bon
+  END
+  PATCH_IF NOT (min_int < 0) BEGIN
+    WRITE_BYTE 0x2a min_int
+  END
+  PATCH_IF NOT (min_dex < 0) BEGIN
+    WRITE_BYTE 0x2c min_dex
+  END
+  PATCH_IF NOT (min_wis < 0) BEGIN
+    WRITE_BYTE 0x2e min_wis
+  END
+  PATCH_IF NOT (min_con < 0) BEGIN
+    WRITE_BYTE 0x30 min_con
+  END
+  PATCH_IF NOT (min_cha < 0) BEGIN
+    WRITE_BYTE 0x32 min_cha
+  END
+  PATCH_IF NOT (price < 0) BEGIN
+    WRITE_LONG 0x34 price
+  END
+  PATCH_IF NOT (stackmx < 0) BEGIN
+    WRITE_SHORT 0x38 stackmx
+  END
+  PATCH_IF NOT (lore < 0) BEGIN
+    WRITE_SHORT 0x42 lore
+  END
+  PATCH_IF NOT (weight < 0) BEGIN
+    WRITE_LONG 0x4c weight
+  END
+  PATCH_IF NOT (min_bon < 0) BEGIN
+    WRITE_BYTE 0x28 min_bon
+  END
+
+  PATCH_IF "%eq_appear%" STR_CMP "" BEGIN
+    LPF c7_get_item_anim_id STR_VAR eq_appear RET new_appear END
+    PATCH_IF "%new_appear%" STR_CMP "" BEGIN
+      WRITE_ASCIIE 0x22 "%new_appear%" (2)
+    END
+  END
+
+  PATCH_IF FILE_EXISTS_IN_GAME "%iicon%.bam" BEGIN // && FILE_EXISTS "%MOD_FOLDER%/bam/%iicon%.bam"
+    WRITE_ASCIIE 0x3a "%iicon%" (8)
+    PATCH_FOR_EACH header_type IN 1 2 4 BEGIN
+      LPF ALTER_ITEM_HEADER INT_VAR header_type STR_VAR icon = EVAL "%iicon%" END
+    END
+  END
+  PATCH_IF FILE_EXISTS_IN_GAME "%gicon%.bam" BEGIN
+    WRITE_ASCIIE 0x44 "%gicon%" (8)
+  END
+  PATCH_IF FILE_EXISTS_IN_GAME "%desc_icon%.bam" BEGIN
+    WRITE_ASCIIE 0x58 "%desc_icon%" (8)
+  END
+END
+
+DEFINE_DIMORPHIC_FUNCTION c7_get_item_anim_id
+  STR_VAR
+    eq_appear = ""
+  RET
+    new_appear
+BEGIN
+  OUTER_PATCH "" BEGIN
+    TEXT_SPRINT new_appear ""
+    PATCH_MATCH eq_appear WITH
+      // oBG2 animation types
+      leather BEGIN TEXT_SPRINT new_appear "2A" END
+      mage_robe_1 BEGIN TEXT_SPRINT new_appear "2W" END
+      mage_robe_2 BEGIN TEXT_SPRINT new_appear "3W" END
+      mage_robe_3 BEGIN TEXT_SPRINT new_appear "4W" END
+      plate_mail BEGIN TEXT_SPRINT new_appear "4A" END
+      chain_mail BEGIN TEXT_SPRINT new_appear "3A
+      axe BEGIN TEXT_SPRINT new_appear "AX" END
+      shortbow BEGIN TEXT_SPRINT new_appear "BS" END
+      longbow BEGIN TEXT_SPRINT new_appear "BW" END
+      buckler BEGIN TEXT_SPRINT new_appear "D1" END
+      small_shield BEGIN TEXT_SPRINT new_appear "D2" END
+      medium_shield BEGIN TEXT_SPRINT new_appear "D3" END
+      large_shield BEGIN TEXT_SPRINT new_appear "D4" END
+      dagger BEGIN TEXT_SPRINT new_appear "DD" END
+      flail BEGIN TEXT_SPRINT new_appear "FL" END
+      flaming_sword BEGIN TEXT_SPRINT new_appear "FS" END
+      helmet_1 BEGIN TEXT_SPRINT new_appear "H0" END
+      helmet_2 BEGIN TEXT_SPRINT new_appear "H1" END
+      helmet_3 BEGIN TEXT_SPRINT new_appear "H2" END
+      helmet_4 BEGIN TEXT_SPRINT new_appear "H3" END
+      helmet_5 BEGIN TEXT_SPRINT new_appear "H4" END
+      helmet_6 BEGIN TEXT_SPRINT new_appear "H5" END
+      helmet_7 BEGIN TEXT_SPRINT new_appear "H6" END
+      helmet_8 BEGIN TEXT_SPRINT new_appear "H7" END
+      halberd BEGIN TEXT_SPRINT new_appear "HB" END
+      mace BEGIN TEXT_SPRINT new_appear "MC" END
+      morning_star BEGIN TEXT_SPRINT new_appear "MS" END
+      quarterstaff BEGIN TEXT_SPRINT new_appear "QS" END
+      bastard_sword BEGIN TEXT_SPRINT new_appear "S0" END
+      long_sword BEGIN TEXT_SPRINT new_appear "S1" END
+      two_hand_sword BEGIN TEXT_SPRINT new_appear "S2" END
+      katana BEGIN TEXT_SPRINT new_appear "S3" END
+      scimitar BEGIN TEXT_SPRINT new_appear "SC" END
+      sling BEGIN TEXT_SPRINT new_appear "SL" END
+      spear BEGIN TEXT_SPRINT new_appear "SP" END
+      short_sword BEGIN TEXT_SPRINT new_appear "SS" END
+      war_hammer BEGIN TEXT_SPRINT new_appear "WH" END
+      club BEGIN TEXT_SPRINT new_appear "CL" END
+      crossbow BEGIN TEXT_SPRINT new_appear "CB" END
+
+      // 1pp new animations
+      small_shield_alt_1 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C0" END
+      small_shield_alt_2 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C4" END
+      medium_shield_alt_1 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C1" END
+      medium_shield_alt_2 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C3" END
+      medium_shield_alt_3 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C7" END
+      flail_alt_1 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "F0" END
+      flail_alt_2 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "F1" END
+      flail_alt_3 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "F3" END
+      flaming_sword_blue WHEN is_1pp BEGIN TEXT_SPRINT new_appear "F2" END
+      glowing_staff WHEN is_1pp BEGIN TEXT_SPRINT new_appear "GS" END
+      helmet_9 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J0" END
+      helmet_10 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J1" END
+      helmet_11 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J2" END
+      helmet_12 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J3" END
+      helmet_13 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J4" END
+      helmet_14 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J5" END
+      helmet_15 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J6" END
+      helmet_16 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J7" END
+      helmet_17 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J8" END
+      helmet_18 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "J9" END
+      helmet_19 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "JA" END
+      helmet_20 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "JC" END
+      large_shield_alt_1 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C2" END
+      large_shield_alt_2 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C5" END
+      large_shield_alt_3 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "C6" END
+      wings WHEN is_1pp BEGIN TEXT_SPRINT new_appear "ZW" END
+      circlet WHEN is_1pp BEGIN TEXT_SPRINT new_appear "JB" END
+      mace_alt WHEN is_1pp BEGIN TEXT_SPRINT new_appear "M2" END
+      quarterstaff_alt_1 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "Q2" END
+      quarterstaff_alt_2 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "Q3" END
+      quarterstaff_alt_3 WHEN is_1pp BEGIN TEXT_SPRINT new_appear "Q4" END
+
+
+      none BEGIN TEXT_SPRINT new_appear "  " END // i hope that's actually what it is
+
+      DEFAULT
+        PATCH_WARN ~WARNING: c7_update_weapon was called with invalid item animation parameter %eq_appear%!~
+    END
+  END
+END
+

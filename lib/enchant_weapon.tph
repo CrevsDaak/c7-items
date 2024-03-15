@@ -1,6 +1,6 @@
 
 // enchant_weapon.tph
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/enchant_weapon.tph, 2024-02-18 Sunday 03:47:19 nico>
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/enchant_weapon.tph, 2024-03-09 Saturday 18:55:45 nico>
 
 DEFINE_PATCH_FUNCTION c7_enchant_update_name
   INT_VAR
@@ -119,3 +119,70 @@ BEGIN
     END
   END
 END
+
+  SET books = 0x00
+  SET amulets = 0x01
+  SET armor = 0x02
+  SET belts = 0x03
+  SET boots = 0x04
+  SET arrows = 0x05
+  SET gauntlets = 0x06
+  SET headgear = 0x07
+  SET keys = 0x08
+  SET potions = 0x09
+  SET rings = 0x0a
+  SET scrolls = 0x0b
+  SET shields_not_iwd = 0x0c
+  SET food = 0x0d
+  SET bullets = 0x0e
+  SET bows = 0x0f
+  SET daggers = 0x10
+  SET maces_clubs = 0x11
+  SET slings = 0x12
+  SET small_swords = 0x13
+  SET large_swords = 0x14
+  SET hammers = 0x15
+  SET morning_stars = 0x16
+  SET flails = 0x17
+  SET darts = 0x18
+  SET axes = 0x19
+  SET quarterstaff = 0x1a
+  SET crossbow = 0x1b
+  SET hand_to_hand_weapons = 0x1c
+  SET spears = 0x1d
+  SET halberds = 0x1e
+  SET crossbow_bolts = 0x1f
+  SET cloaks_and_robes = 0x20
+  SET gold_pieces = 0x21
+  SET gems = 0x22
+  SET wands = 0x23
+  SET containers_eye_broken_armor = 0x24
+  SET books_broken_shields_bracelets = 0x25
+  SET familiars_broken_swords_earrings = 0x26
+  SET tattoos_pst = 0x27
+  SET lenses_pst = 0x28
+  SET bucklers = 0x29
+  SET candles = 0x2a
+  SET clubs_iwd = 0x2c
+  SET large_shields_iwd = 0x2f
+  SET medium_shields_iwd = 0x31
+  SET notes = 0x32
+  SET small_shields_iwd = 0x35
+  SET telescopes_iwd = 0x37
+  SET drinks_iwd = 0x38
+  SET great_swords_iwd = 0x39
+  SET container = 0x3a
+  SET fur_pelt = 0x3b
+  SET leather_armor = 0x3c
+  SET studded_leather_armor = 0x3d
+  SET chain_mail = 0x3e
+  SET splint_mail = 0x3f
+  SET half_plate = 0x40
+  SET full_plate = 0x41
+  SET hide_armor = 0x42
+  SET robe = 0x43
+  SET bastard_sword = 0x45
+  SET scarf = 0x46
+  SET food_iwd2 = 0x47
+  SET hat = 0x48
+  SET gauntlet = 0x49

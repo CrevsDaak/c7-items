@@ -1,0 +1,335 @@
+
+// add_header.tph
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/add_header.tph, 2024-03-15 Friday 15:20:44 nico>
+
+DEFINE_PATCH_FUNCTION ADD_HEADER
+  INT_VAR
+    header_type   = 0 // will fail if not set to anything else on ITM files
+    id_required   = BIT0
+    abil_location = "-1"
+    alt_dice_size = 0
+    target        = 1
+    target_count  = 0
+    range         = "-1"
+    level_req     = 0
+    casting_time  = 1
+    times_per_day = 0
+    dice_size     = 0
+    dice_thrown   = 0
+    charges       = 0
+    projectile    = "-1"
+    launcher_req  = 0
+    thac0_bonus   = 0
+    damage_bonus  = 0
+    speed_factor  = 5
+    school        = 0
+    sectype       = 0
+    primary_type  = school
+    damage_type   = 1
+    on_zero_charge = 0
+    secondary_type = sectype
+    alt_dmg_bonus  = 0
+    alt_dice_thrown = 0
+    is_bullet       = 0
+    is_arrow        = 0
+    is_bolt         = 0
+    overhand        = "-1"
+    backhand        = "-1"
+    thrust          = "-1"
+    always_hit      = 0
+    insert_point    = "-1"
+    no_proj         = 1 // don't give a shit about checking projectile field
+    // item ability flags, all booleans
+    break_invis      = 0
+    toggle_backstab  = 0
+    no_invis_target  = 0
+    set_hostile      = 0
+    recharge_on_rest = 0
+    strength_bonus   = 0
+    strength_thac0   = 0
+    strength_dmg     = 0
+    breakable        = 0
+  STR_VAR
+    icon   = EVAL "%DEST_RES%"
+    format = EVAL "%DEST_EXT%"
+
+    projectile_symbol     = ""
+  RET
+    insert_point
+BEGIN
+  // be very explicit about how we set up our environment variables
+  PATCH_IF "%format%" STR_EQ "itm" BEGIN
+    is_itm = 1
+    is_spl = 0
+    header_size = 0x38
+  END ELSE PATCH_IF "%format%" STR_EQ "spl" BEGIN
+    is_itm = 0
+    is_spl = 1
+    header_size = 0x28
+  ELSE BEGIN
+    PATCH_WARN ~WARNING: ADD_HEADER called with invalid header format %format%!~
+    header_size = 0
+  END
+
+  PATCH_IF header_size BEGIN
+    insert_point = (insert_point > (SHORT_AT 0x68) || insert_point < 0) ? (SHORT_AT 0x68) : insert_point
+    READ_SHORT 0x70 fx_index
+    FOR (fx_off = (LONG_AT 0x64); i < ((LONG_AT 0x64) + (insert_point * header_size)); fx_off += header_size) BEGIN
+      READ_SHORT (fx_off + 0x1e) fx_count
+      fx_index += fx_count
+    END
+    head_off = (LONG_AT 0x64) + (insert_point * header_size)
+    INSERT_BYTES head_off header_size
+    WRITE_SHORT 0x68 (THIS + 1)
+    WRITE_LONG  0x6a (THIS + header_size)
+
+    PATCH_IF is_itm BEGIN
+      PATCH_IF NOT (header_type > 0 && header_type < 5) BEGIN
+        PATCH_WARN ~WARNING: ADD_HEADER called with invalid header type %header_type% parameter for format %format%! Defaulting to header_type = 3~
+        header_type = 3
+      END
+      WRITE_BYTE head_off header_type
+      WRITE_BYTE (head_off + 0x1) id_required // no need to check this field
+      PATCH_IF location > 0 BEGIN
+        PATCH_IF NOT (location == 1 || location == 3) BEGIN
+          PATCH_WARN ~WARNING: ADD_HEADER called with invalid ability location %location% parameter for format %format%! Defaulting to location = 3~
+          location = 3
+        END
+      END ELSE BEGIN
+        // if it isn't set just assume its a magical ability
+        location = 3
+      END
+      WRITE_BYTE (head_off + 0x2) location
+      WRITE_BYTE (head_off + 0x3) alt_dice_size
+      PATCH_IF ENGINE_IS tob && target > 5 BEGIN
+        target = 5
+      END
+    END
+
+    PATCH_IF is_spl BEGIN
+      WRITE_SHORT (head_off) 0 // both fields are unused so just blank them
+      PATCH_IF location > 0 BEGIN
+        PATCH_IF NOT (location == 2 || location == 4) BEGIN
+          PATCH_IF (SHORT_AT 0x1c) == 4 BEGIN
+            new_loc = 4
+          END ELSE BEGIN
+            new_loc = 2
+          END
+          PATCH_WARN ~WARNING: ADD_HEADER called with invalid ability location %location% parameter for format %format%! Defaulting to location = %new_loc%~
+          location = new_loc
+        END
+      END ELSE BEGIN
+        // if it isn't set just assume its a regular spell
+        location = (SHORT_AT 0x1c) == 4 ? 4 : 2
+      END
+      WRITE_SHORT (head_off + 0x2) location
+    END
+
+    PATCH_IF target == 6 || target > 7 || target == 0 BEGIN
+      PATCH_WARN ~WARNING: ADD_HEADER called with invalid target value of %target%! Defaulting to target = 1~
+      target = 1
+    END
+    WRITE_BYTE (head_off + 0xC) target
+
+    PATCH_IF !FILE_EXISTS_IN_GAME "%icon%.bam" BEGIN
+      TEXT_SPRINT icon "%SOURCE_RES%"
+    END
+    WRITE_ASCIIE (head_off + 0x4) "%icon%" (8)
+
+    WRITE_BYTE (head_off + 0xD) target_count
+
+    PATCH_IF range < 0 BEGIN
+      PATCH_IF is_spl BEGIN
+        range = 30
+      END ELSE BEGIN
+        PATCH_IF header_type == 1 BEGIN
+          range = 2
+        END ELSE BEGIN
+          range = 30
+        END
+      END
+    END
+    WRITE_SHORT (head_off + 0xE) range
+
+    PATCH_IF projectile < 0 BEGIN
+      invalid_symbol = 0
+      PATCH_IF "%projectile_symbol%" STR_CMP "" BEGIN
+        projectile = IDS_OF_SYMBOL ("projectl" "%projectile_symbol%")
+        PATCH_IF projectile < 0 BEGIN
+          invalid_symbol = 1
+        END
+      END ELSE BEGIN
+        invalid_symbol = 1
+      END
+
+      PATCH_IF invalid_symbol BEGIN
+        PATCH_IF no_proj BEGIN
+          PATCH_WARN ~WARNING: ADD_HEADER called with no valid projectile! Defaulting to INAREA symbol~
+          projectile = IDS_OF_SYMBOL ("projectl" "INAREA")
+        END ELSE BEGIN
+          projectile = 0
+        END
+        PATCH_IF projectile < 0 BEGIN
+          PATCH_FAIL ~FAILURE: ADD_HEADER failed to assign INAREA.PRO to %DEST_RES%!~
+        END
+      END
+    END
+
+    PATCH_IF is_spl BEGIN
+      WRITE_SHORT (head_off + 0x10) level_req
+      PATCH_IF casting_time < 0 BEGIN
+        casting_time = 0
+      END
+      PATCH_IF casting_time > 9 BEGIN
+        casting_time = 9
+      END
+      WRITE_SHORT (head_off + 0x12) casting_time
+      // don't need to check any of these fields
+      WRITE_SHORT (head_off + 0x14) times_per_day
+      WRITE_SHORT (head_off + 0x16) dice_size
+      WRITE_SHORT (head_off + 0x18) dice_thrown
+
+      WRITE_SHORT (head_off + 0x26) projectile
+    END ELSE BEGIN
+      // write the .itm specific fields
+      WRITE_BYTE (head_off + 0x11) alt_dice_thrown
+      WRITE_BYTE (head_off + 0x12) speed_factor
+      WRITE_BYTE (head_off + 0x13) alt_dmg_bonus
+      PATCH_IF always_hit BEGIN
+        thac0_bonus = 32767
+      END
+      WRITE_SHORT (head_off + 0x14) thac0_bonus
+      WRITE_BYTE (head_off + 0x16) dice_size
+      WRITE_BYTE (head_off + 0x17) primary_type
+      WRITE_BYTE (head_off + 0x18) dice_thrown
+      WRITE_BYTE (head_off + 0x19) secondary_type
+
+      item_ex_flags_1 = 0
+      item_ex_flags_2 = 0
+      item_ex_flags_4 = 0
+      PATCH_IF strength_bonus BEGIN
+        SET item_ex_flags_1 |= BIT0
+      END
+      PATCH_IF breakable BEGIN
+        SET item_ex_flags_1 |= BIT1
+      END
+      PATCH_IF strength_dmg BEGIN
+        SET item_ex_flags_1 |= BIT2
+      END
+      PATCH_IF strength_thac0 BEGIN
+        SET item_ex_flags_1 |= BIT3
+      END
+      PATCH_IF break_invis BEGIN
+        SET item_ex_flags_2 |= BIT1
+      END
+      PATCH_IF set_hostile BEGIN
+        SET item_ex_flags_2 |= BIT2
+      END
+      PATCH_IF recharge_on_rest BEGIN
+        SET item_ex_flags_2 |= BIT3
+      END
+      PATCH_IF toggle_backstab BEGIN
+        SET item_ex_flags_4 |= BIT1
+      END
+      PATCH_IF no_invis_target BEGIN
+        SET item_ex_flags_4 |= BIT2
+      END
+      WRITE_BYTE (head_off + 0x26) item_ex_flags_1
+      WRITE_BYTE (head_off + 0x27) item_ex_flags_2
+      WRITE_BYTE (head_off + 0x28) 0
+      WRITE_BYTE (head_off + 0x29) item_ex_flags_4
+
+      WRITE_SHORT (head_off + 0x2a) projectile
+
+      // we are rather trigger happy and will delete user input if any of it is wrong
+      PATCH_IF overhand < 0  ||  backhand < 0 || thrust < 0 BEGIN
+        PATCH_MATCH (BYTE_AT 0x31) WITH
+          // longswords, blunt weapons et al
+          0x59 0x5a 0x5c 0x5f 0x61 0x72 0x64 0x65 BEGIN
+            overhand = 0x32
+            backhand = 0x32
+            thrust   = 0x0
+          END
+
+          0x60 BEGIN // dagger
+            overhand = 0x0
+            backhand = 0x14
+            thrust   = 0x50
+          END
+
+          0x5b BEGIN // short sword
+            overhand = 0xA
+            backhand = 0x19
+            thrust   = 0x41
+          END
+
+          0x5d BEGIN // two handed sword
+            overhand = 0x3c
+            backhand = 0x28
+            thrust   = 0x0
+          END
+
+          0x63 BEGIN // haldberd
+            overhand = 0x0
+            backhand = 0x23
+            thrust   = 0x41
+          END
+
+          0x62 BEGIN // spears
+            overhand = 0x0
+            backhand = 0x0
+            thrust   = 0x64
+          END
+
+          0x66 BEGIN // staves
+            overhand = 0xA
+            backhand = 0x46
+            thrust   = 0x14
+          END
+
+          DEFAULT
+            PATCH_IF location = 3 BEGIN
+              overhand = 0x22
+              backhand = 0x21
+              thrust   = 0x21
+            END ELSE BEGIN
+              overhand = 0
+              backhand = 0
+              thrust   = 0
+            END
+        END
+      END
+
+      WRITE_SHORT (head_off + 0x2c) overhand
+      WRITE_SHORT (head_off + 0x2e) backhand
+      WRITE_SHORT (head_off + 0x30) thrust
+
+      PATCH_IF is_arrow BEGIN
+        WRITE_SHORT (head_off + 0x32) 1
+        launcher_req = 1
+      END
+
+      PATCH_IF is_bolt BEGIN
+        WRITE_SHORT (head_off + 0x34) 1
+        launcher_req = 2
+      END
+
+      PATCH_IF is_bullet BEGIN
+        WRITE_SHORT (head_off + 0x36) 1
+        launcher_req = 3
+      END
+
+      WRITE_BYTE (head_off + 0x10) launcher_req
+    END
+
+    WRITE_SHORT (head_off + 0x1a) damage_bonus
+    WRITE_SHORT (head_off + 0x1c) damage_type
+    WRITE_SHORT (head_off + 0x22) charges
+    WRITE_SHORT (head_off + 0x24) on_zero_charge
+
+    WRITE_SHORT (head_off + 0x1e) 0
+    WRITE_SHORT (head_off + 0x20) fx_index
+  END
+END
+
+// eof
