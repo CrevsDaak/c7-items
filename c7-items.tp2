@@ -15,6 +15,13 @@ ALWAYS
   END ELSE BEGIN
     OUTER_SPRINT ee_tra "_ee"
   END
+
+  // should also specifically check for the palette/flaming sword/wings components
+  ACTION_IF MOD_IS_INSTALLED ~1pp.tp2~ ~101~ || GAME_IS ~bgee eet bg2ee~ BEGIN
+    OUTER_SET is_1pp = 1
+  END ELSE BEGIN
+    OUTER_SET is_1pp = 0
+  END
 END
 
 //README "%MOD_FOLDER%/readme.md"
@@ -26,6 +33,7 @@ LANGUAGE
 
 
 BEGIN @77000 DESIGNATED 100
+LABEL ~c7_items_main~
 REQUIRE_PREDICATE GAME_IS ~bgt tob eet bgee bg2ee~ @77001
 
 ACTION_IF GAME_INCLUDES bg1 BEGIN

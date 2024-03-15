@@ -1,6 +1,6 @@
 
 // shared_content.tpa
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/shared_content.tpa, 2024-02-08 Thursday 12:52:03 nico>
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/shared_content.tpa, 2024-02-20 Tuesday 18:15:25 nico>
 
 
 ACTION_TIME shared_content BEGIN
@@ -33,5 +33,15 @@ ACTION_TIME shared_content BEGIN
     LPF c7_enchant_weapon END
     SAY NAME2 @300402
     SAY IDENTIFIED_DESC @300403
+  IF_EXISTS
+
+  COPY_EXISTING clck14.itm "override/c7clck14.itm"
+    LPF c7_update_item
+      INT_VAR
+        price = 1250
+        lore = 65
+        weight = 3
+        
+        
   IF_EXISTS
 END

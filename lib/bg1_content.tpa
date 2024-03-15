@@ -1,7 +1,6 @@
 
 // bg1_content.tpa
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/bg1_content.tpa, 2024-02-08 Thursday 12:51:55 nico>
-
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/bg1_content.tpa, 2024-02-18 Sunday 02:53:53 nico>
 
 ACTION_TIME bg1_content BEGIN
   LOAD_TRA "%MOD_FOLDER%/lang/%LANGUAGE%/bg1_content%ee_tra%.tra"

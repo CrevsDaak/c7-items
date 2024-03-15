@@ -1,7 +1,11 @@
 
 // bg2_content.tpa
-// Time-stamp: </Users/nico/BG_modding/c7-items/lib/bg2_content.tpa, 2024-02-08 Thursday 11:56:39 nico>
+// Time-stamp: </Users/nico/BG_modding/c7-items/lib/bg2_content.tpa, 2024-02-18 Sunday 03:34:25 nico>
 
 ACTION_TIME bg2_content BEGIN
-  
+  LOAD_TRA "%MOD_FOLDER%/lang/%LANGUAGE%/bg2_content%ee_tra%.tra"
+
+  COPY_EXISTING chan04.itm "override/c7chble1.itm"
+    LPF ADD_ITEM_AURA_EFFECT_FROM_SPELL STR_VAR spell = sppr101 END
+    
 END
